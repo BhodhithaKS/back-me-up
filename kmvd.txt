@@ -1,0 +1,41 @@
+print("insode function")
+  try:
+    current_folder_id = folder_id
+    print("inside try")
+    for root, dirs, files in os.walk(folder_path):
+        folder_name = os.path.basename(root)
+        totfiles=len(files)
+        print("root: ", root,"dirs: ", dirs,"files: ", files,"totfiles: ", totfiles)
+        # Create folder in Google Drive
+        folder_metadata = {"name": folder_name, "parents": [current_folder_id], "mimeType": "application/vnd.google-apps.folder"}
+        folder = service.files().create(body=folder_metadata, fields="id").execute()
+        current_folder_id = folder.get("id")
+        print(f"\033[32mCreated folder {folder_name} on drive with ID: {current_folder_id}.\033[0m")
+        print("Folders in",os.path.basename(root),":",dirs)
+        if not files:
+          # If there are no files to be uploaded in the current folder
+          print("0 files to be uploaded in this folder")
+        
+        print("Total files in the current folder:",totfiles)
+        # Upload files in the current folder
+        flecount=0
+        for file in files:
+            filecount+=1
+            file_metadata = {"name": file, "parents": [current_folder_id]}
+            media = MediaFileUpload(os.path.join(root, file), resumable=True)
+            uploadfile = service.files().create(body=file_metadata, media_body=media).execute()
+            print("\033[33mUploaded file:\033[0m", uploadfile.get('name'))
+            yield  
+        break
+    
+        # Recursively traverse into subdirectories
+    for subdir in dirs:
+        print("\nUploading folder: \"",subdir,"\"")
+        upload_all_files_n_folders(service, current_folder_id, root+"/"+subdir)
+
+  except HttpError as error:
+        print(f"An error occurred: {error}")
+        return False          
+ 
+              
+  
